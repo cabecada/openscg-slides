@@ -1,0 +1,25 @@
+COURSES = \
+	course_standard \
+	course_developer
+
+MODULES_STANDARD = \
+	architecture/architecture.pdf \
+	managing/managing.pdf
+
+MODULES_DEVELOPER = \
+	basic_sql/basic_sql.pdf
+
+all: $(COURSES)
+
+clean:
+	rm -rf courses
+
+course_standard:
+	mkdir -p courses
+	pdftk $(MODULES_STANDARD) cat output courses/$@.pdf encrypt_40bit owner_pw oscg
+
+course_developer:
+	mkdir -p courses
+	pdftk $(MODULES_DEVELOPER) cat output courses/$@.pdf encrypt_40bit owner_pw oscg
+
+.PHONY: all clean $(COURSES)

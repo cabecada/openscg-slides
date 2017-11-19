@@ -1,0 +1,56 @@
+builddir = .build
+
+%.pdf: %.svg
+	inkscape --export-pdf $@ $<
+
+%.pdf: %.odg
+	soffice --headless --convert-to pdf:draw_pdf_Export \
+		-env:UserInstallation=file://$(HOME)/.soffice-batch $<
+
+%.pdf: %.md $(builddir)
+	cd $(builddir) ; \
+	pandoc ../$< -t beamer \
+		--slide-level 1 \
+		-f markdown-implicit_figures \
+		-H ./templates/oscg.tex \
+		--latex-engine xelatex \
+		--filter ./filters/overlay_filter \
+		--filter ./filters/oscg_filter \
+		--filter ./filters/pandoc-svg.py \
+		--filter ./filters/pandoc-odg.py \
+		-o `basename $@ .pdf`.tex ; \
+	cd ..
+	cd $(builddir) ; \
+	latexmk -xelatex `basename $@ .pdf`.tex ; \
+	cd ..
+	cp $(builddir)/$@ $@
+	if [ -f $(builddir)/`basename $@ .pdf`.pdfpc ] ; then \
+	    cp $(builddir)/`basename $@ .pdf`.pdfpc `basename $@ .pdf`.pdfpc ; \
+	fi
+
+$(builddir):
+	mkdir -p $(builddir)/templates 
+	for f in `ls $(top_builddir)/templates` ; do \
+	    rm -r $(builddir)/templates/`basename $$f` ; \
+	    ln -s ../../$(top_builddir)/templates/`basename $$f` $(builddir)/templates ; \
+	done
+	mkdir -p $(builddir)/filters 
+	for f in `ls $(top_builddir)/filters` ; do \
+	    rm -r $(builddir)/filters/`basename $$f` ; \
+	    ln -s ../../$(top_builddir)/filters/`basename $$f` $(builddir)/filters ; \
+	done
+	mkdir -p $(builddir)/images 
+	for f in `ls $(top_builddir)/images` ; do \
+	    rm -r $(builddir)/images/`basename $$f` ; \
+	    ln -s ../../$(top_builddir)/images/`basename $$f` $(builddir)/images ; \
+	done
+	if [ -d images ] ; then \
+	    for f in `ls images/` ; do \
+		rm -f $(builddir)/images/$$f ; \
+		ln -s ../../images/$$f $(builddir)/images/$$f ; \
+	    done ; \
+	fi
+
+.PHONY:	$(builddir)
+.DEFAULT_GOAL := all
+
